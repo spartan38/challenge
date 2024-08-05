@@ -19,9 +19,22 @@ INITIAL_PRICES = {
      'SOLUSDT': 102.041,
      'AAVEUSDT': 110.56,
      'MASKUSDT': 3.713,
-     'XRPUSDT': 0.6166
+     'XRPUSDT': 0.6166,
+     'USDT': 1,
 }
 
+
+INVENTORY = {
+    'AAVEUSDT': 250_000,
+    'BNBUSDT': 250_000,
+    'BTCUSDT': 250_000,
+    'DOGEUSDT': 250_000,
+    'ETHUSDT': 250_000,
+    'MASKUSDT': 250_000,
+    'SOLUSDT': 250_000,
+    'XRPUSDT': 250_000,
+    'USDT': 500_000
+}
 
 INIT_QUANTITY = {
     'AAVEUSDT': 1922.0332850940665,
@@ -34,6 +47,18 @@ INIT_QUANTITY = {
     'XRPUSDT': 344631.85209211806,
     'USDT': 500_000
 }
+#
+# INVENTORY = {
+#     'BTCUSDT': 425_035.0,
+#     'ETHUSDT': 229_741.0,
+#     'USDT': 4_000_000
+# }
+#
+# INIT_QUANTITY = {
+#     'BTCUSDT': 10.0,
+#     'ETHUSDT': 100.0,
+#     'USDT': 4_000_000
+# }
 
 
 START_TIME = "01-01-2024"

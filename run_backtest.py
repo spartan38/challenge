@@ -2,13 +2,16 @@ from datetime import datetime
 
 from model.config import Config
 
-from analysis_tools.compute_data import compute_collateral_value, compute_funding_dataframe
+from analysis_tools.compute_data import compute_funding_dataframe
 from analysis_tools.loading_data import loading_data
 from static_data import START_TIME, END_TIME
 from strategy.best_gain import BestGain
 
 
 def run() -> None:
+    from static_data import INVENTORY, INIT_QUANTITY, HAIRCUTS, INITIAL_PRICES
+
+
     dataset = loading_data()
 
     config = Config(
@@ -17,12 +20,13 @@ def run() -> None:
         end_date=datetime.strptime(END_TIME, "%d-%m-%Y"),
     )
 
-    funding_df = compute_funding_dataframe(dataset)
+    funding_df = compute_funding_dataframe(dataset, INVENTORY, INITIAL_PRICES)
 
-    strat = BestGain(funding_df, config)
+    strat = BestGain(funding_df, config, INVENTORY, INIT_QUANTITY, HAIRCUTS)
 
     strat.apply()
 
-    strat.result
+    strat.apply_stats()
+
 
 
