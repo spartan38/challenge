@@ -1,0 +1,40 @@
+# Collateral haircuts
+HAIRCUTS = {
+    'BTC': 0.95,
+    'ETH': 0.95,
+    'BNB': 0.90,
+    'DOGE': 0.90,
+    'SOL': 0.90,
+    'AAVE': 0.85,
+    'MASK': 0.85,
+    'XRP': 0.85
+}
+
+# Initial prices for each token
+INITIAL_PRICES = {
+     'BTCUSDT': 42503.5,
+     'ETHUSDT': 2297.41,
+     'BNBUSDT': 313.57,
+     'DOGEUSDT': 0.0899,
+     'SOLUSDT': 102.041,
+     'AAVEUSDT': 110.56,
+     'MASKUSDT': 3.713,
+     'XRPUSDT': 0.6166
+}
+
+
+INIT_QUANTITY = {
+    'AAVEUSDT': 1922.0332850940665,
+    'BNBUSDT': 717.5431323149536,
+    'BTCUSDT': 5.58777512440152,
+    'DOGEUSDT': 2502780.867630701,
+    'ETHUSDT': 103.37728137337263,
+    'MASKUSDT': 57231.34931322381,
+    'SOLUSDT': 2204.996031007144,
+    'XRPUSDT': 344631.85209211806,
+    'USDT': 500_000
+}
+
+
+START_TIME = "01-01-2024"
+END_TIME = "31-05-2024"
