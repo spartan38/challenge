@@ -42,7 +42,6 @@ class BestGain:
         # Process each unique date separately
         for date in unique_dates:
             self.collateral_posted = 0
-            self.collateral_needed = 0
             # Filter rows for the current date
             df_date = self.df[self.df.timestamp == date].copy()
             self._calculate_collateral_values(df_date)
@@ -54,7 +53,6 @@ class BestGain:
 
             # USDT line management
             sorted_df["is_usdt_invest"] = False
-            over_collateralised_available = (self.collateral_posted*(1-self.config.buffer_liquidation) - self.collateral_needed)
             last_row_copy = sorted_df.iloc[0].copy()
             last_row_copy["token"] = "USDT"
             last_row_copy["collateral_needed_usd"] = self.init_quantity["USDT"]
@@ -66,7 +64,7 @@ class BestGain:
             # Append the modified row to the DataFrame using pd.concat
             sorted_df = pd.concat([last_row_copy.to_frame().T, sorted_df], ignore_index=True)
             # Sum up the total collateral needed for the day
-            self.collateral_available = sorted_df["collateral_value_usd"].sum()
+            self.collateral_available = sorted_df.loc[sorted_df["token"].isin(list(self.inventory.keys())), "collateral_value_usd"].sum()
             self.invested_amount = 0
             # Determine the action (POSTED or INVESTED) based on collateral needs
             sorted_df["collateral_needed_usd"].sum()
@@ -98,14 +96,21 @@ class BestGain:
         fees_amount = (fees_amount_spot + fees_amount_taker + fees_amount_spot_perp)
         return (gain_usd > fees_amount, fees_amount)
 
-    def apply_stats(self):
-        profitable_value = self.result.loc[(self.result["is_profitable"]==True) & (self.result["ACTION"] == "INVESTED")]
-        pnl_by_token = profitable_value.pivot_table(values="potential_gain_usd", index="token", columns=[], aggfunc='sum')
-
+    def get_pnl_by_token(self) -> pd.DataFrame:
+        profitable_value = self.get_profitable_trade()
+        pnl_by_token = profitable_value.pivot_table(values="potential_gain_usd", index="token", columns=[],
+                                                    aggfunc='sum')
         pnl_by_token.reset_index(inplace=True)
-
         pnl_by_token["amount_invested"] = pnl_by_token["token"].apply(lambda x: self.inventory[x])
         pnl_by_token["APY_BY_TOKEN"] = pnl_by_token["potential_gain_usd"] / pnl_by_token["amount_invested"]
+        return pnl_by_token
+
+    def get_profitable_trade(self):
+        return self.result.loc[(self.result["is_profitable"] == True) & (self.result["ACTION"] == "INVESTED")]
+
+    def apply_stats(self):
+        profitable_value = self.get_profitable_trade()
+        pnl_by_token = self.get_pnl_by_token()
 
         fee = profitable_value.pivot_table(values="fee_amount", index="timestamp", columns=[], aggfunc=np.mean).sum().values[0]
 
@@ -117,9 +122,9 @@ class BestGain:
         pnl_by_token["gain_with_fee"] = (pnl / pnl_without_fee) * (pnl_by_token["potential_gain_usd"])
         pnl_by_token["APY_with_fee"] = pnl_by_token["gain_with_fee"] / pnl_by_token["amount_invested"]
 
-        print(f"PnL (with fee) {pnl:.2f} $\n"
-              f"           Fee {fee:.2f} $\n"
-              f"           APY {apy:.2f} %\n\n"
+        print(f"PnL (with fees) {pnl:.2f} $\n"
+              f"           Fees {fee:.2f} $\n"
+              f"            APY {apy:.2f} %\n\n"
               f"{'*' * 25} RECAP {'*' * 28}\n\n"
               f"{pnl_by_token}"
               )
@@ -138,12 +143,14 @@ class BestGain:
             return 0
         return row['current_quantity_hold'] * max(row["funding_rate_binance"], row["funding_rate_bybite"])
 
-    def _apply_potential_gain_usdt(self, row):
+    def _apply_potential_gain_usdt(self, row) -> float:
         available = (self.collateral_posted - self.collateral_needed) * (1 - self.config.buffer_liquidation)
         invest_usdt = self.inventory.get(row["token"]) if available > self.inventory.get(row["token"]) else available
         return (invest_usdt / row['close']) * max(row["funding_rate_binance"], row["funding_rate_bybite"])
 
-    def _apply_best_allocation(self, row):
+    def _apply_best_allocation(self, row) -> str:
+        if row["token"] not in list(self.inventory.keys()):
+            return ["NOT OWNED"]
         temp = (self.collateral_available - row["collateral_value_usd"]) * (1-self.config.buffer_liquidation)
         # Allocate collateral based on whether the total needed collateral has been posted
         if temp < self.invested_amount + row["collateral_needed_usd"]:
