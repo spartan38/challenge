@@ -51,13 +51,13 @@ INITIAL_PRICES = {
 INVENTORY = {
     'BTCUSDT': 425_035.0,
     'ETHUSDT': 229_741.0,
-    'USDT': 4_000_000
+    'USDT': 1_000_000
 }
 
 INIT_QUANTITY = {
     'BTCUSDT': 10.0,
     'ETHUSDT': 100.0,
-    'USDT': 4_000_000
+    'USDT': 1_000_000
 }
 
 

@@ -151,6 +151,7 @@ class BestGain:
     def _apply_best_allocation(self, row) -> str:
         if row["token"] not in list(self.inventory.keys()):
             return ["NOT OWNED"]
+        # result = self._compute_best_allocation(row)
         temp = (self.collateral_available - row["collateral_value_usd"]) * (1-self.config.buffer_liquidation)
         # Allocate collateral based on whether the total needed collateral has been posted
         if temp < self.invested_amount + row["collateral_needed_usd"]:
@@ -161,3 +162,6 @@ class BestGain:
             self.collateral_available -= row["collateral_value_usd"]
             self.invested_amount += row["collateral_needed_usd"]
             return "INVESTED"
+
+    def _compute_best_allocation(self, row):
+        pass
