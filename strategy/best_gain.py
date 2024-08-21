@@ -45,40 +45,53 @@ class BestGain:
             # Filter rows for the current date
             df_date = self.df[self.df.timestamp == date].copy()
             self._calculate_collateral_values(df_date)
-            df_date["potential_gain"] = df_date.apply(self._apply_potential_gain, axis=1)
-            df_date["potential_gain_usd"] = df_date["potential_gain"] * df_date["close"]
-            df_date["collateral_needed_usd"] = df_date["current_quantity_hold"] * df_date["close"]
+            self._calculate_gain(df_date)
             # Sort by potential gain in USD
             sorted_df = df_date.sort_values(by=['potential_gain_usd'], ascending=False)
 
             # USDT line management
             sorted_df["is_usdt_invest"] = False
-            last_row_copy = sorted_df.iloc[0].copy()
-            last_row_copy["token"] = "USDT"
-            last_row_copy["collateral_needed_usd"] = self.init_quantity["USDT"]
-            last_row_copy["collateral_value_usd"] = last_row_copy["collateral_needed_usd"]
-            last_row_copy["current_quantity_hold"] = self.init_quantity["USDT"] / last_row_copy["close"]
-            last_row_copy["potential_gain"] = self.init_quantity["USDT"] / last_row_copy["close"]
-            last_row_copy["potential_gain_usd"] = self._apply_potential_gain(last_row_copy) * last_row_copy["close"]
-            last_row_copy["is_usdt_invest"] = True
+
+            last_row_copy = self._compute_last_row(sorted_df)
             # Append the modified row to the DataFrame using pd.concat
             sorted_df = pd.concat([last_row_copy.to_frame().T, sorted_df], ignore_index=True)
             # Sum up the total collateral needed for the day
             self.collateral_available = sorted_df.loc[sorted_df["token"].isin(list(self.inventory.keys())), "collateral_value_usd"].sum()
             self.invested_amount = 0
-            # Determine the action (POSTED or INVESTED) based on collateral needs
-            sorted_df["collateral_needed_usd"].sum()
-            sorted_df["ACTION"] = sorted_df.apply(self._apply_best_allocation, axis=1)
-            # Execute strategy if the fee is lower than the expected return
-            is_profitable, fee_amount = self.is_profitable_trade(sorted_df)
-            sorted_df["is_profitable"] = is_profitable
-            sorted_df["fee_amount"] = fee_amount
+
+            self._compute_strategy(sorted_df)
+
             df_list.append(sorted_df)
         # Concatenate all the processed daily data
         self.result = pd.concat(df_list)
         self.result = self.result.loc[self.result["token"].isin((self.inventory.keys()))]
         # Format the timestamp into a readable date format
         self.result["date_daily"] = pd.to_datetime(self.result["timestamp"]).dt.strftime("%d-%m-%Y")
+
+    def _compute_last_row(self, sorted_df):
+        last_row_copy = sorted_df.iloc[0].copy()
+        last_row_copy["token"] = "USDT"
+        last_row_copy["collateral_needed_usd"] = self.init_quantity["USDT"]
+        last_row_copy["collateral_value_usd"] = last_row_copy["collateral_needed_usd"]
+        last_row_copy["current_quantity_hold"] = self.init_quantity["USDT"] / last_row_copy["close"]
+        last_row_copy["potential_gain"] = self.init_quantity["USDT"] / last_row_copy["close"]
+        last_row_copy["potential_gain_usd"] = self._apply_potential_gain(last_row_copy) * last_row_copy["close"]
+        last_row_copy["is_usdt_invest"] = True
+        return last_row_copy
+
+    def _calculate_gain(self, df):
+        df["potential_gain"] = df.apply(self._apply_potential_gain, axis=1)
+        df["potential_gain_usd"] = df["potential_gain"] * df["close"]
+        df["collateral_needed_usd"] = df["current_quantity_hold"] * df["close"]
+
+    def _compute_strategy(self, df):
+        # Determine the action (POSTED or INVESTED) based on collateral needs
+        df["ACTION"] = df.apply(self._apply_best_allocation, axis=1)
+        # Execute strategy if the fee is lower than the expected return
+        is_profitable, fee_amount = self.is_profitable_trade(df)
+        df["is_profitable"] = is_profitable
+        df["fee_amount"] = fee_amount
+
 
     def _calculate_collateral_values(self, df: pd.DataFrame):
         # Calculate collateral value adjusted by the haircut value

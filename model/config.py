@@ -10,7 +10,7 @@ class Config:
     dataset: Dataset
     start_date: datetime
     end_date: datetime
-    buffer_liquidation: float = 0.05 # 5% to prevent liquidation
+    buffer_liquidation: float = 0.1 # 0.05 5% to prevent liquidation
     required_collateral: float = 0.3 # 30% to prevent liquidation
     spot_perp_fee: float = 0.00005 # 0.05% to prevent liquidation
     taker_fee: float = 0.0001 # 0.1% to prevent liquidation
